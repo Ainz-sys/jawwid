@@ -1,0 +1,31 @@
+OK   qa.zip  5807871 bytes  sha256 5eeb045d8a789520
+qa/Abdul_Basit_Mujawwad_128kbps.json
+qa/Abdul_Basit_Murattal_64kbps.json
+qa/Abdurrahmaan_As-Sudais_192kbps.json
+qa/Abu_Bakr_Ash-Shaatree_128kbps.json
+qa/Alafasy_128kbps.json
+qa/Hani_Rifai_192kbps.json
+qa/Husary_64kbps.json
+qa/Husary_Muallim_128kbps.json
+qa/LICENSE
+qa/Minshawy_Mujawwad_192kbps.json
+qa/Minshawy_Murattal_128kbps.json
+qa/Mohammad_al_Tablaway_128kbps.json
+qa/README
+qa/Saood_ash-Shuraym_128kbps.json
+copied Minshawy_Murattal_128kbps.json
+copied Minshawy_Mujawwad_192kbps.json
+OK   tanzil-uthmani-marks.txt  1384015 bytes  sha256 18c719bb3ba26d32
+OK   tanzil-uthmani-plain.txt  1370878 bytes  sha256 bf4f57b968d03f41
+OK   tanzil-uthmani.xml  1529315 bytes  sha256 5ea5cbab9b4d0316
+OK   tanzil-download-page.html  7115 bytes  sha256 20c5ef2033d752d4
+OK   tanzil-quran-data.js  25096 bytes  sha256 9e9930c592aaa34b
+OK   tajweed-2017-quran-uthmani.txt  1376504 bytes  sha256 abe6447a5d29bb12
+AUDIO 206 audio/mpeg  https://everyayah.com/data/Minshawy_Murattal_128kbps/001001.mp3
+AUDIO 206 audio/mpeg  https://everyayah.com/data/Minshawy_Murattal_128kbps/078014.mp3
+AUDIO 206 audio/mpeg  https://everyayah.com/data/Minshawy_Mujawwad_192kbps/078014.mp3
+AUDIO 206 audio/mpeg  https://cdn.mp3quran.net/audio/muhammad-minshawi/r3/001.mp3
+AUDIO 206 audio/mpeg  https://cdn.mp3quran.net/audio/muhammad-minshawi/r3/078.mp3
+OK   sample-murattal-078014.mp3  166894 bytes  sha256 8262ad4dc506eb90
+OK   sample-mujawwad-078014.mp3  182282 bytes  sha256 e0e1a7aaf7a0a031
+done
