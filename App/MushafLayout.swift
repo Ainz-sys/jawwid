@@ -8,7 +8,7 @@ struct MushafItem: Equatable, Sendable {
         case word
         /// Ayah-end sign with its number.
         case marker
-        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel in the gap after its word.
+        /// Pause mark (ۖ ۗ ۚ ۛ …): its outline from the font, drawn in the gap after its word.
         case pause
         /// Sajdah sign ۩ or rub el hizb ۞.
         case symbol
@@ -66,8 +66,23 @@ struct MushafLayout: Sendable {
         return v >= 0x06D6 && v <= 0x06DC
     }
 
-    /// Tatweel that carries a pause mark; drawn transparent.
-    static let markBase = "\u{0640}"
+    /// The Quran font's glyph for one character, as CoreText sees it.
+    static func glyph(_ character: String, fontSize: CGFloat) -> (font: CTFont, glyph: CGGlyph)? {
+        let units = Array(character.utf16)
+        guard units.count == 1 else { return nil }
+        let font = CTFontCreateWithName(AppFont.quranName as CFString, fontSize, nil)
+        var unit = units[0]
+        var glyph: CGGlyph = 0
+        guard CTFontGetGlyphsForCharacters(font, &unit, &glyph, 1), glyph != 0 else { return nil }
+        return (font, glyph)
+    }
+
+    /// Ink box of that glyph, in points with y up from the baseline.
+    static func glyphBox(_ character: String, fontSize: CGFloat) -> CGRect? {
+        guard var g = glyph(character, fontSize: fontSize) else { return nil }
+        let box = CTFontGetBoundingRectsForGlyphs(g.font, .horizontal, &g.glyph, nil, 1)
+        return box.isEmpty ? nil : box
+    }
 
     private struct Part {
         let kind: MushafItem.Kind
@@ -105,7 +120,8 @@ struct MushafLayout: Sendable {
                 unit.parts.append(Part(kind: .word, ayah: a, word: i, text: w.text, width: measure(w.text, font: font)))
                 for mark in (w.marks ?? "").split(separator: " ").map(String.init) {
                     if isPauseMark(mark) {
-                        unit.parts.append(Part(kind: .pause, ayah: a, word: i, text: mark, width: measure(markBase + mark, font: font)))
+                        let markWidth = glyphBox(mark, fontSize: fontSize).map { ceil($0.width) } ?? (fontSize * 0.25).rounded()
+                        unit.parts.append(Part(kind: .pause, ayah: a, word: i, text: mark, width: markWidth))
                     } else {
                         unit.parts.append(Part(kind: .symbol, ayah: a, word: i, text: mark, width: measure(mark, font: font)))
                     }
@@ -207,10 +223,16 @@ struct MushafLineView: View {
     /// Moves the glyphs so their ink, not their tall font box, sits in the middle of the line.
     private var textOffset: CGFloat { -0.28 * fontSize }
 
-    /// Amiri Quran draws pause marks 1.32–1.52 em above the baseline, high enough to clear any stack of
-    /// harakat on a letter. In the gap between words there is nothing to clear, and at that height a mark
-    /// sits nearer the line above than its own; lowered by a third of an em it sits just above its line's harakat.
-    private var pauseDrop: CGFloat { 0.33 * fontSize }
+    /// Where the words' baseline falls in the line: the text box is centred, then moved by `textOffset`.
+    private var baselineY: CGFloat {
+        let f = AppFont.uiQuranFont(fontSize)
+        return height / 2 + textOffset - f.lineHeight / 2 + f.ascender
+    }
+
+    /// Height of a pause mark's centre above the baseline. Laid out as text, Amiri Quran puts these marks
+    /// 1.3–1.5 em up, clear of any stack of harakat, which leaves them nearer the line above than their own.
+    /// Drawn from their outlines instead, they sit in the gap at the height of the harakat, as in print.
+    private var markLift: CGFloat { 1.0 * fontSize }
 
     var body: some View {
         ZStack(alignment: .topLeading) {
@@ -233,7 +255,7 @@ struct MushafLineView: View {
         let parts = line.items.filter { $0.ayah == a }
         guard let minX = parts.map({ $0.x }).min(), let maxX = parts.map({ $0.x + $0.width }).max() else { return nil }
         // Tall enough to hold the pause marks above the words and the kasras below them.
-        let h = min(fontSize * 1.9, height - 4)
+        let h = min(fontSize * 1.8, height - 4)
         return CGRect(x: minX - 6, y: (height - h) / 2, width: maxX - minX + 12, height: h)
     }
 
@@ -244,26 +266,32 @@ struct MushafLineView: View {
 
     private func content(_ item: MushafItem) -> Text {
         switch item.kind {
-        case .word, .symbol:
+        case .word, .symbol, .pause:
             return Text(item.text).foregroundStyle(palette.ink)
         case .marker:
             return Text(item.text).foregroundStyle(palette.gold)
-        case .pause:
-            var base = AttributedString(MushafLayout.markBase)
-            base.foregroundColor = .clear
-            var mark = AttributedString(item.text)
-            mark.foregroundColor = palette.ink
-            return Text(base + mark)
         }
     }
 
     @ViewBuilder
     private func itemView(_ item: MushafItem) -> some View {
+        if item.kind == .pause, let mark = PauseMarkShapes.shape(item.text, fontSize: fontSize) {
+            mark.path
+                .fill(palette.ink)
+                .frame(width: mark.size.width, height: mark.size.height)
+                .position(x: item.x + item.width / 2, y: baselineY - markLift)
+                .accessibilityHidden(true)
+        } else {
+            textItem(item)
+        }
+    }
+
+    private func textItem(_ item: MushafItem) -> some View {
         let lit = isLit(item)
-        content(item)
+        return content(item)
             .font(AppFont.quran(fontSize))
             .fixedSize()
-            .offset(y: item.kind == .pause ? textOffset + pauseDrop : textOffset)
+            .offset(y: textOffset)
             .frame(width: item.width + 4, height: height)
             .background {
                 if lit {
@@ -276,5 +304,32 @@ struct MushafLineView: View {
             .onTapGesture { onTap(item.ayah) }
             .position(x: item.x + item.width / 2, y: height / 2)
             .accessibilityHidden(true)
+    }
+}
+
+/// Outlines of the pause marks, made once per size.
+@MainActor
+enum PauseMarkShapes {
+    struct Shape {
+        /// The ink with its top-left corner at the origin, y downwards.
+        let path: Path
+        let size: CGSize
+    }
+
+    private static var cache: [String: Shape] = [:]
+
+    static func shape(_ mark: String, fontSize: CGFloat) -> Shape? {
+        let key = "\(mark)|\(fontSize)"
+        if let hit = cache[key] { return hit }
+        guard let g = MushafLayout.glyph(mark, fontSize: fontSize),
+              let outline = CTFontCreatePathForGlyph(g.font, g.glyph, nil) else { return nil }
+        let box = outline.boundingBoxOfPath
+        guard !box.isEmpty else { return nil }
+        // Glyph space has y up from the baseline; turn it over and move the ink to the origin.
+        var flip = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: -box.minX, ty: box.maxY)
+        guard let placed = outline.copy(using: &flip) else { return nil }
+        let shape = Shape(path: Path(placed), size: box.size)
+        cache[key] = shape
+        return shape
     }
 }
