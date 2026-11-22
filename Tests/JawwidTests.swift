@@ -40,8 +40,9 @@ final class JawwidTests: XCTestCase {
         for s in Quran.shared.surahs {
             for a in 1...s.ayahCount {
                 for w in Quran.shared.words(s.number, a) {
-                    XCTAssertFalse(w.text.unicodeScalars.contains { (0x06D6...0x06DC).contains($0.value) },
-                                   "\(s.number):\(a) “\(w.text)” still carries a pause mark")
+                    // ۜ also appears inside two words (2:245, 7:69) as part of their spelling; that one stays.
+                    let glued = w.text.unicodeScalars.contains { $0 == " " || (0x06D6...0x06DB).contains($0.value) }
+                    XCTAssertFalse(glued, "\(s.number):\(a) “\(w.text)” still carries a pause mark")
                     marked += Quran.spaceSeparated(w.marks ?? "").count
                 }
             }
