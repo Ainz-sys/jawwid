@@ -1,0 +1,8 @@
+build/
+simbuild/
+*.xcodeproj/
+Payload/
+*.ipa
+.DS_Store
+raw/
+__pycache__/

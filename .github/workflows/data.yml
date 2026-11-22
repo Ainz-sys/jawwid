@@ -1,0 +1,25 @@
+# Downloads the official data sources (word timings, Tanzil text) and publishes them on the "rawdata" branch.
+# tools/build_data.py then builds App/Resources/Data from that branch (see README).
+name: Fetch source data
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - tools/fetch_sources.sh
+      - .github/workflows/data.yml
+permissions:
+  contents: write
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download the sources
+        run: bash tools/fetch_sources.sh raw
+      - name: Publish on the "rawdata" branch
+        run: |
+          cd raw
+          git init -q -b rawdata && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "raw sources ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" rawdata
