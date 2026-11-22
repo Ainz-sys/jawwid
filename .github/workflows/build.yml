@@ -1,5 +1,7 @@
 # Builds جوِّد on GitHub's macOS machines (no Mac needed).
 #  • build: Jawwid.ipa, published on the "ipa" branch; the build log (errors and warnings) on the "logs" branch
+#  • test: the unit tests on an iPhone simulator (data, layout of every surah, playback, downloads);
+#    the result on the "tests" branch
 #  • shots: when the commit message contains [shots] (or on a manual run), screenshots from the iPhone simulator
 #    on the "shots" branch
 name: Build Jawwid
@@ -62,6 +64,39 @@ jobs:
           cd _log && git init -q -b logs && git add -A
           git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "build log ${GITHUB_SHA::7}"
           git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" logs
+
+  test:
+    runs-on: macos-15
+    timeout-minutes: 40
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate the Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Run the tests on an iPhone simulator
+        run: |
+          UDID=$(python3 .github/pick_sim.py pro)
+          set -o pipefail
+          xcodebuild test -project Jawwid.xcodeproj -scheme Jawwid -destination "id=$UDID" \
+            -derivedDataPath testbuild CODE_SIGNING_ALLOWED=NO 2>&1 | tee test.log \
+            | grep -E "Test Case|error:|PLAYBACK|Executed|\*\* TEST" | tail -n 120
+      - name: Publish the test log on the "tests" branch
+        if: always()
+        run: |
+          mkdir -p _t
+          {
+            echo "commit ${GITHUB_SHA::7} — ${{ job.status }}"
+            grep -E "Test Case|error:|PLAYBACK|Executed|\*\* TEST" test.log | head -300
+            echo "----- warnings"
+            grep -E "warning:" test.log | grep -v "appintentsmetadataprocessor" | sort -u | head -60
+            echo "----- tail"
+            tail -n 60 test.log
+          } > _t/test.log 2>/dev/null || true
+          cd _t && git init -q -b tests && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "tests ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" tests
 
   shots:
     if: contains(github.event.head_commit.message, '[shots]') || github.event_name == 'workflow_dispatch'
