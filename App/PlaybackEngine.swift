@@ -73,6 +73,8 @@ final class PlaybackEngine: ObservableObject {
     private var timeObserver: Any?
     private var bag = Set<AnyCancellable>()
     private var token = 0
+    /// The learner asked for playback (and has not paused it); a call or Siri pausing the player does not change it.
+    private var wantsToPlay = false
     private var resumeAfterInterruption = false
     private lazy var silence: AVURLAsset? = PlaybackEngine.makeSilence().map { AVURLAsset(url: $0) }
 
@@ -104,6 +106,7 @@ final class PlaybackEngine: ObservableObject {
 
         clearQueue()
         token += 1
+        wantsToPlay = autoplay
         let current = token
         let r = settings.reciter
         if r != reciter { timings = nil }
@@ -152,6 +155,7 @@ final class PlaybackEngine: ObservableObject {
     func stop() {
         clearQueue()
         token += 1
+        wantsToPlay = false
         surah = nil
         phase = .idle
         isPlaying = false
@@ -181,6 +185,7 @@ final class PlaybackEngine: ObservableObject {
     }
 
     func pause() {
+        wantsToPlay = false
         player.pause()
         syncPlaying()
         updateNowPlaying()
@@ -198,6 +203,7 @@ final class PlaybackEngine: ObservableObject {
         case .idle:
             start(surah: s, at: ayah)
         default:
+            wantsToPlay = true
             activateSession()
             player.play()
             syncPlaying()
@@ -235,9 +241,18 @@ final class PlaybackEngine: ObservableObject {
 
     /// Plays from a given ayah of the current surah (or starts that surah).
     func play(surah s: Int, from a: Int) {
-        if surah == s, isActive, reciter == settings.reciter, a >= rangeStart, a <= rangeEnd {
+        let same = surah == s && isActive && reciter == settings.reciter
+        if same && !reciter.isAyahByAyah {
+            // The teacher recording has no ayah times to jump to; a tap only starts it again once it has ended.
+            switch phase {
+            case .finished, .failed: start(surah: s, at: 1)
+            default: break
+            }
+            return
+        }
+        if same, a >= rangeStart, a <= rangeEnd {
             restart(at: a)
-        } else if surah == s, isActive, reciter == settings.reciter {
+        } else if same {
             start(surah: s, at: a, rangeStart: a, rangeEnd: Quran.shared.surah(s).ayahCount)
         } else {
             start(surah: s, at: a)
@@ -371,6 +386,11 @@ final class PlaybackEngine: ObservableObject {
 
     private func restart(at a: Int) {
         guard let s = surah else { return }
+        // Only ayah-by-ayah recordings can start at an ayah; the teacher recording starts over.
+        guard reciter.isAyahByAyah else {
+            start(surah: s, at: a)
+            return
+        }
         clearQueue()
         token += 1
         ayah = a
@@ -378,6 +398,7 @@ final class PlaybackEngine: ObservableObject {
         phase = .loading
         nextAyah = a
         AppStore.shared.setPosition(surah: s, ayah: a)
+        wantsToPlay = true
         activateSession()
         refill()
         player.play()
@@ -387,6 +408,7 @@ final class PlaybackEngine: ObservableObject {
     private func finish() {
         clearQueue()
         token += 1
+        wantsToPlay = false
         phase = .finished
         wordRange = nil
         syncPlaying()
@@ -578,6 +600,7 @@ final class PlaybackEngine: ObservableObject {
         guard let item, stepFor[ObjectIdentifier(item)] != nil else { return }
         clearQueue()
         token += 1
+        wantsToPlay = false
         wordRange = nil
         phase = .failed("تعذّر تشغيل التلاوة. تحقّق من الاتصال بالإنترنت، أو نزّل السورة لتعمل دون اتصال.")
         syncPlaying()
@@ -598,6 +621,7 @@ final class PlaybackEngine: ObservableObject {
             } else {
                 phase = .finished
             }
+            wantsToPlay = false
             wordRange = nil
             syncPlaying()
             updateNowPlaying()
@@ -635,11 +659,16 @@ final class PlaybackEngine: ObservableObject {
               let type = AVAudioSession.InterruptionType(rawValue: raw) else { return }
         switch type {
         case .began:
-            resumeAfterInterruption = isPlaying
+            // By now the system may already have paused the player, so go by what the learner asked for.
+            resumeAfterInterruption = wantsToPlay
             syncPlaying()
         case .ended:
             let options = AVAudioSession.InterruptionOptions(rawValue: (info[AVAudioSessionInterruptionOptionKey] as? UInt) ?? 0)
-            if options.contains(.shouldResume) && resumeAfterInterruption { resume() }
+            if options.contains(.shouldResume) && resumeAfterInterruption {
+                resume()
+            } else if resumeAfterInterruption {
+                wantsToPlay = false
+            }
             resumeAfterInterruption = false
         @unknown default:
             break
@@ -706,7 +735,12 @@ final class PlaybackEngine: ObservableObject {
     private static func makeSilence() -> URL? {
         let url = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask)[0]
             .appendingPathComponent("silence-180s.caf")
-        if FileManager.default.fileExists(atPath: url.path) { return url }
+        // 180 s of 16-bit samples at 8 kHz; a shorter file was cut off while being written.
+        let fullSize = 180 * 8000 * 2
+        if let size = (try? FileManager.default.attributesOfItem(atPath: url.path))?[.size] as? Int, size >= fullSize {
+            return url
+        }
+        try? FileManager.default.removeItem(at: url)
         let rate = 8000.0
         guard let format = AVAudioFormat(commonFormat: .pcmFormatInt16, sampleRate: rate, channels: 1, interleaved: true) else { return nil }
         let frames = AVAudioFrameCount(rate * 10)

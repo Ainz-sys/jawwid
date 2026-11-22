@@ -26,12 +26,26 @@ struct MushafIndexView: View {
                         .padding(.bottom, 4)
                 }
                 if let error = downloads.lastError {
-                    Text(error)
-                        .font(AppFont.ui(14))
-                        .foregroundStyle(p.warn)
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .padding(12)
-                        .background(p.warnSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(error)
+                            .font(AppFont.ui(14))
+                            .foregroundStyle(p.warn)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        Button {
+                            downloads.clearError()
+                        } label: {
+                            Image(systemName: "xmark")
+                                .font(.system(size: 12, weight: .semibold))
+                                .foregroundStyle(p.warn)
+                                .frame(width: 28, height: 28)
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("إخفاء")
+                    }
+                    .padding(.leading, 12)
+                    .padding(.trailing, 6)
+                    .padding(.vertical, 8)
+                    .background(p.warnSoft, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
                 }
                 if mode == .surahs || !query.isEmpty {
                     ForEach(surahs) { s in

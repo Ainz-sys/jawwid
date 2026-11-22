@@ -179,7 +179,17 @@ final class AppStore: ObservableObject {
             data = demo
             persist = false
         } else {
-            data = (try? Data(contentsOf: fileURL)).flatMap { try? JSONDecoder().decode(UserData.self, from: $0) } ?? UserData()
+            let raw = try? Data(contentsOf: fileURL)
+            if let raw, let decoded = try? JSONDecoder().decode(UserData.self, from: raw) {
+                data = decoded
+            } else {
+                if raw != nil {
+                    // An unreadable file is set aside, not overwritten, so the progress in it is not lost.
+                    let aside = dir.appendingPathComponent("user-unreadable-\(Int(Date().timeIntervalSince1970)).json")
+                    try? FileManager.default.moveItem(at: fileURL, to: aside)
+                }
+                data = UserData()
+            }
             persist = true
         }
         data.settings.repeatCount = min(max(data.settings.repeatCount, 1), 10)
@@ -205,8 +215,16 @@ final class AppStore: ObservableObject {
 
     // MARK: Progress
 
+    /// Gregorian days in the local time zone, whatever calendar the phone shows (many users pick the Hijri one),
+    /// so the keys stay the same if that setting changes.
+    nonisolated static var dayCalendar: Calendar {
+        var cal = Calendar(identifier: .gregorian)
+        cal.timeZone = .current
+        return cal
+    }
+
     nonisolated static func dayKey(_ date: Date) -> String {
-        let c = Calendar.current.dateComponents([.year, .month, .day], from: date)
+        let c = dayCalendar.dateComponents([.year, .month, .day], from: date)
         return String(format: "%04d-%02d-%02d", c.year ?? 0, c.month ?? 0, c.day ?? 0)
     }
 
@@ -243,7 +261,7 @@ final class AppStore: ObservableObject {
 
     /// Consecutive days with practice, ending today (or yesterday, so the streak holds until today ends).
     var streak: Int {
-        let cal = Calendar.current
+        let cal = AppStore.dayCalendar
         var day = cal.startOfDay(for: Date())
         if (days[AppStore.dayKey(day)] ?? 0) == 0 {
             guard let y = cal.date(byAdding: .day, value: -1, to: day) else { return 0 }

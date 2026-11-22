@@ -125,7 +125,8 @@ struct SurahReaderView: View {
     }
 
     private func lineView(_ line: MushafLine, _ layout: MushafLayout) -> some View {
-        let active: Int? = (isCurrent && line.contains(ayah: engine.ayah)) ? engine.ayah : nil
+        // The teacher recording has no ayah times, so nothing is marked while it plays.
+        let active: Int? = (isCurrent && engine.reciter.isAyahByAyah && line.contains(ayah: engine.ayah)) ? engine.ayah : nil
         return MushafLineView(line: line, width: layout.width, height: layout.lineHeight, fontSize: layout.fontSize,
                               activeAyah: active, activeWords: active == nil ? nil : engine.wordRange,
                               palette: p, onTap: { a in tapped(a) })
@@ -274,7 +275,7 @@ struct ReaderPlayerPanel: View {
             } label: {
                 HStack(spacing: 10) {
                     Image(systemName: "play.fill")
-                    Text(startAyah > 1 ? "استمع من الآية \(Arabic.n(startAyah))" : "ابدأ الاستماع")
+                    Text(idleTitle)
                         .font(AppFont.ui(17, .semibold))
                 }
                 .foregroundStyle(p.accentInk)
@@ -286,6 +287,12 @@ struct ReaderPlayerPanel: View {
                 showSettings = true
             }
         }
+    }
+
+    private var idleTitle: String {
+        // The teacher recording always plays the whole surah.
+        if !store.settings.reciter.isAyahByAyah { return "استمع إلى السورة كاملة" }
+        return startAyah > 1 ? "استمع من الآية \(Arabic.n(startAyah))" : "ابدأ الاستماع"
     }
 
     private var dotColor: Color {
@@ -707,7 +714,6 @@ struct RepeatSettingsSheet: View {
                     }
 
                     PrimaryButton(title: "تم") {
-                        apply()
                         dismiss()
                     }
                 }
@@ -719,7 +725,6 @@ struct RepeatSettingsSheet: View {
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button {
-                        apply()
                         dismiss()
                     } label: {
                         Image(systemName: "xmark").foregroundStyle(p.ink)
@@ -729,6 +734,8 @@ struct RepeatSettingsSheet: View {
             }
         }
         .onAppear(perform: load)
+        // However the sheet closes (button or swipe), the choices take effect.
+        .onDisappear(perform: apply)
         .onChange(of: from) { _, v in if to < v { to = v } }
         .onChange(of: to) { _, v in if from > v { from = v } }
     }

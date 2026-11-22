@@ -105,6 +105,8 @@ final class Downloads: ObservableObject {
 
     func isDone(_ r: Reciter, _ s: Int) -> Bool { done.contains(Key(reciter: r, surah: s)) }
 
+    func clearError() { lastError = nil }
+
     func fraction(_ r: Reciter, _ s: Int) -> Double? { progress[Key(reciter: r, surah: s)] }
 
     func start(_ r: Reciter, _ s: Int) {
@@ -176,9 +178,12 @@ final class Downloads: ObservableObject {
                     return
                 }
             }
+            // A cancelled download leaves the entries alone: a new one for the same surah may own them now.
+            if Task.isCancelled { return }
             finished += 1
             progress[key] = finished / total
         }
+        if Task.isCancelled { return }
         progress[key] = nil
         tasks[key] = nil
         done.insert(key)

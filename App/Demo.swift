@@ -26,7 +26,7 @@ enum Demo {
         for a in 1...7 { completed.append(q.globalIndex(1, a)) }
         for a in 1...13 { completed.append(q.globalIndex(78, a)) }
         d.completed = completed
-        let cal = Calendar.current
+        let cal = AppStore.dayCalendar
         for i in 0..<12 {
             if let day = cal.date(byAdding: .day, value: -i, to: Date()) {
                 d.days[AppStore.dayKey(day)] = i == 0 ? 6 : 3 + (i % 4)
