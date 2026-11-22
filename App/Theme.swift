@@ -141,22 +141,26 @@ enum Arabic {
         return digits(String(format: "%d:%02d", t / 60, t % 60))
     }
 
-    /// Correct Arabic plural for ayat: آية واحدة، آيتان، ٣ آيات، ١١ آية
+    /// Whether a count written in digits takes the plural noun: 3–10 do, and above 100 the last two digits
+    /// decide (١٠٩ آيات، ٢٠٦ آيات، ١١١ آية، ٢٠٠ آية). 1 and 2 have words of their own.
+    private static func takesPlural(_ count: Int) -> Bool {
+        (3...10).contains(count > 100 ? count % 100 : count)
+    }
+
+    /// Correct Arabic plural for ayat: آية واحدة، آيتان، ٣ آيات، ١١ آية، ١٠٩ آيات
     static func ayat(_ count: Int) -> String {
         switch count {
         case 1: return "آية واحدة"
         case 2: return "آيتان"
-        case 3...10: return "\(n(count)) آيات"
-        default: return "\(n(count)) آية"
+        default: return "\(n(count)) " + (takesPlural(count) ? "آيات" : "آية")
         }
     }
 
-    static func days(_ count: Int) -> String {
+    static func suwar(_ count: Int) -> String {
         switch count {
-        case 1: return "يوم واحد"
-        case 2: return "يومان"
-        case 3...10: return "\(n(count)) أيام"
-        default: return "\(n(count)) يوماً"
+        case 1: return "سورة واحدة"
+        case 2: return "سورتان"
+        default: return "\(n(count)) " + (takesPlural(count) ? "سور" : "سورة")
         }
     }
 
@@ -164,8 +168,7 @@ enum Arabic {
         switch count {
         case 1: return "مرة واحدة"
         case 2: return "مرتان"
-        case 3...10: return "\(n(count)) مرات"
-        default: return "\(n(count)) مرة"
+        default: return "\(n(count)) " + (takesPlural(count) ? "مرات" : "مرة")
         }
     }
 
@@ -173,8 +176,7 @@ enum Arabic {
         switch count {
         case 1: return "ثانية واحدة"
         case 2: return "ثانيتان"
-        case 3...10: return "\(n(count)) ثوانٍ"
-        default: return "\(n(count)) ثانية"
+        default: return "\(n(count)) " + (takesPlural(count) ? "ثوانٍ" : "ثانية")
         }
     }
 }

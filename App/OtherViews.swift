@@ -183,6 +183,7 @@ struct ComingSoonView: View {
 
 struct SettingsView: View {
     @EnvironmentObject private var store: AppStore
+    @EnvironmentObject private var engine: PlaybackEngine
     @EnvironmentObject private var downloads: Downloads
     @EnvironmentObject private var router: Router
     @Environment(\.palette) private var p
@@ -200,7 +201,10 @@ struct SettingsView: View {
             Section {
                 ForEach(Reciter.allCases) { r in
                     Button {
+                        guard store.settings.reciter != r else { return }
                         store.settings.reciter = r
+                        // A recitation that is playing switches over at the same ayah.
+                        engine.settingsChanged()
                     } label: {
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {
@@ -259,7 +263,7 @@ struct SettingsView: View {
                     HStack {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(r.title).font(AppFont.ui(15, .semibold)).foregroundStyle(p.ink)
-                            Text(count == 0 ? "لا شيء محفوظ" : "\(Arabic.n(count)) سورة · \(sizeText(sizes[r] ?? 0))")
+                            Text(count == 0 ? "لا شيء محفوظ" : "\(Arabic.suwar(count)) · \(sizeText(sizes[r] ?? 0))")
                                 .font(AppFont.ui(13))
                                 .foregroundStyle(p.ink2)
                         }
@@ -275,7 +279,7 @@ struct SettingsView: View {
             } header: {
                 Text("التنزيلات")
             } footer: {
-                Text("نزّل أي سورة من فهرس المصحف بزر السهم، فتعمل دون إنترنت. البسملة تُحفظ مرة واحدة مع سورة الفاتحة.")
+                Text("نزّل أي سورة من فهرس المصحف بزر السهم، فتعمل دون إنترنت. للبسملة تسجيل واحد يُحفظ مرة واحدة لكل السور.")
             }
             .listRowBackground(p.surface)
 
