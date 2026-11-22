@@ -8,7 +8,7 @@ struct MushafItem: Equatable, Sendable {
         case word
         /// Ayah-end sign with its number.
         case marker
-        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel in the gap after its word (the font sets its height).
+        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel in the gap after its word.
         case pause
         /// Sajdah sign ۩ or rub el hizb ۞.
         case symbol
@@ -49,6 +49,13 @@ struct MushafLayout: Sendable {
         if a == 0 { return basmala.first?.id }
         guard let i = firstLine[a] else { return nil }
         return lines[i].id
+    }
+
+    /// Position of that line among all drawn lines, basmala lines first.
+    func row(forAyah a: Int) -> Int? {
+        if a == 0 { return basmala.isEmpty ? nil : 0 }
+        guard let i = firstLine[a] else { return nil }
+        return basmala.count + i
     }
 
     static func ayahSign(_ a: Int) -> String { "\u{06DD}" + Arabic.n(a) }
@@ -200,6 +207,11 @@ struct MushafLineView: View {
     /// Moves the glyphs so their ink, not their tall font box, sits in the middle of the line.
     private var textOffset: CGFloat { -0.28 * fontSize }
 
+    /// Amiri Quran draws pause marks 1.32–1.52 em above the baseline, high enough to clear any stack of
+    /// harakat on a letter. In the gap between words there is nothing to clear, and at that height a mark
+    /// sits nearer the line above than its own; lowered by a third of an em it sits just above its line's harakat.
+    private var pauseDrop: CGFloat { 0.33 * fontSize }
+
     var body: some View {
         ZStack(alignment: .topLeading) {
             if let band = ayahBand {
@@ -220,7 +232,8 @@ struct MushafLineView: View {
         guard let a = activeAyah else { return nil }
         let parts = line.items.filter { $0.ayah == a }
         guard let minX = parts.map({ $0.x }).min(), let maxX = parts.map({ $0.x + $0.width }).max() else { return nil }
-        let h = fontSize * 1.75
+        // Tall enough to hold the pause marks above the words and the kasras below them.
+        let h = min(fontSize * 1.9, height - 4)
         return CGRect(x: minX - 6, y: (height - h) / 2, width: maxX - minX + 12, height: h)
     }
 
@@ -250,7 +263,7 @@ struct MushafLineView: View {
         content(item)
             .font(AppFont.quran(fontSize))
             .fixedSize()
-            .offset(y: textOffset)
+            .offset(y: item.kind == .pause ? textOffset + pauseDrop : textOffset)
             .frame(width: item.width + 4, height: height)
             .background {
                 if lit {

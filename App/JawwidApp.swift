@@ -66,19 +66,13 @@ struct RootView: View {
     }
 
     var body: some View {
-        Group {
-            if Demo.screen == "marks-test" {
-                RenderingTestView()
-            } else {
-                tabs
-            }
-        }
-        .tint(palette.accent)
-        .environment(\.palette, palette)
-        .environment(\.layoutDirection, .rightToLeft)
-        .environment(\.locale, Locale(identifier: "ar"))
-        .font(AppFont.ui(17))
-        .preferredColorScheme(store.settings.theme.colorScheme)
+        tabs
+            .tint(palette.accent)
+            .environment(\.palette, palette)
+            .environment(\.layoutDirection, .rightToLeft)
+            .environment(\.locale, Locale(identifier: "ar"))
+            .font(AppFont.ui(17))
+            .preferredColorScheme(store.settings.theme.colorScheme)
     }
 
     private var tabs: some View {

@@ -157,7 +157,7 @@ struct ProgressLine: View {
         }
         .frame(height: height)
         .accessibilityElement()
-        .accessibilityValue("\(Int((max(0, min(1, fraction)) * 100).rounded())) بالمئة")
+        .accessibilityValue("\(Arabic.n(wholePercent(fraction))) بالمئة")
     }
 }
 
@@ -179,15 +179,22 @@ struct ProgressRing: View {
                     .font(.system(size: 12, weight: .bold))
                     .foregroundStyle(p.accent)
             } else {
-                Text(Arabic.n(Int((fraction * 100).rounded())))
+                Text(Arabic.n(wholePercent(fraction)))
                     .font(AppFont.ui(10, .semibold))
                     .foregroundStyle(p.ink2)
             }
         }
         .frame(width: size, height: size)
         .accessibilityElement()
-        .accessibilityLabel("أُنجز \(Arabic.n(Int((fraction * 100).rounded()))) بالمئة")
+        .accessibilityLabel("أُنجز \(Arabic.n(wholePercent(fraction))) بالمئة")
     }
+}
+
+/// Whole percent for display: never 100 before the end, never 0 once something is done.
+func wholePercent(_ fraction: Double) -> Int {
+    guard fraction > 0 else { return 0 } // also catches NaN
+    if fraction >= 1 { return 100 }
+    return min(99, max(1, Int((fraction * 100).rounded())))
 }
 
 /// Section title used in sheets and settings.

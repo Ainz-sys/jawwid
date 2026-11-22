@@ -91,25 +91,28 @@ jobs:
           mkdir -p shots
           # every simulator command gets a time limit, so one stuck call cannot hang the job
           t() { perl -e 'alarm shift; exec @ARGV' "$@"; }
+          # every launch is written down (simctl prints the process id), so a missing screen can be explained
+          note() { echo "$(date +%H:%M:%S) $*" >> shots/launch.log; }
           prep() {
+            note "prepare $1"
             t 120 xcrun simctl boot "$1" >/dev/null 2>&1 || true
-            t 300 xcrun simctl bootstatus "$1" -b >/dev/null 2>&1 || return 1
+            t 300 xcrun simctl bootstatus "$1" -b >/dev/null 2>&1 || { note "boot failed"; return 1; }
             t 30 xcrun simctl status_bar "$1" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
-            t 120 xcrun simctl install "$1" "$APP" || return 1
+            t 180 xcrun simctl install "$1" "$APP" || { note "install failed"; return 1; }
             # warm-up launch: a freshly booted simulator draws its first frames slowly
-            t 30 xcrun simctl launch "$1" $ID -jawwidDemo home >/dev/null 2>&1 || true
+            t 120 xcrun simctl launch "$1" $ID -jawwidDemo home >> shots/launch.log 2>&1 || note "warm-up launch failed"
             sleep 15
             t 30 xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
           }
           shoot() { # udid screen file [theme]
             t 30 xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
-            t 30 xcrun simctl launch "$1" $ID -jawwidDemo "$2" -jawwidTheme "${4:-light}" >/dev/null 2>&1 || true
+            t 120 xcrun simctl launch "$1" $ID -jawwidDemo "$2" -jawwidTheme "${4:-light}" >> shots/launch.log 2>&1 || note "launch failed: $3"
             sleep 6
-            t 30 xcrun simctl io "$1" screenshot "shots/$3.png" >/dev/null 2>&1 || echo "no screenshot for $3"
+            t 30 xcrun simctl io "$1" screenshot "shots/$3.png" >/dev/null 2>&1 || note "no screenshot: $3"
           }
           prep "$UDID"
           for s in home home-new mini index juz reader reader-gap reader-compact reader-settings reader-font \
-                   reader-fatiha reader-baqarah reader-basmala reader-idle progress settings credits tajweed marks-test; do
+                   reader-fatiha reader-baqarah reader-basmala reader-idle progress settings credits tajweed; do
             shoot "$UDID" "$s" "$s"
           done
           for s in home reader reader-settings index; do shoot "$UDID" "$s" "dark-$s" dark; done
@@ -117,11 +120,16 @@ jobs:
           shoot "$UDID" home xl-home
           shoot "$UDID" reader xl-reader
           t 30 xcrun simctl ui "$UDID" content_size large || true
+          # one simulator at a time: two booted ones are too much for the runner
+          t 120 xcrun simctl shutdown "$UDID" || true
           SMALL=$(python3 .github/pick_sim.py small)
           if [ -n "$SMALL" ] && prep "$SMALL"; then
             for s in home reader index reader-settings; do shoot "$SMALL" "$s" "small-$s"; done
           fi
           t 30 xcrun simctl list devices booted > shots/devices.txt || true
+          # crash reports of the app, if there are any
+          mkdir -p shots/crashes
+          find ~/Library/Logs/DiagnosticReports -name 'Jawwid*' -newer sim.log -exec cp {} shots/crashes/ \; 2>/dev/null || true
       - name: Publish screenshots on the "shots" branch
         if: always()
         run: |

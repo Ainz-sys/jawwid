@@ -178,9 +178,11 @@ struct DownloadButton: View {
         let r = store.settings.reciter
         Group {
             if downloads.isDone(r, surah) {
-                Image(systemName: "checkmark.circle.fill")
-                    .font(.system(size: 21))
-                    .foregroundStyle(p.ok)
+                // A quiet filled arrow, as in Music and Podcasts; a check here would read as "finished reading".
+                Image(systemName: "arrow.down.circle.fill")
+                    .font(.system(size: 17))
+                    .foregroundStyle(p.ink2.opacity(0.75))
+                    .frame(width: 24, height: 24)
                     .accessibilityLabel("محفوظة على الجهاز")
             } else if let fraction = downloads.fraction(r, surah) {
                 Button {

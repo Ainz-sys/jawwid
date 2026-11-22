@@ -32,6 +32,7 @@ struct SurahReaderView: View {
                         SurahHeaderView(info: info)
                             .padding(.top, 6)
                             .padding(.bottom, 10)
+                            .id(Self.headerID)
                         if let layout {
                             ForEach(layout.basmala) { line in
                                 lineView(line, layout)
@@ -48,10 +49,10 @@ struct SurahReaderView: View {
                     .padding(.bottom, 24)
                 }
                 .onChange(of: layoutVersion) { _, _ in
-                    scrollToStart(proxy)
+                    scrollToStart(proxy, viewport: geo.size.height)
                 }
                 .onChange(of: engine.ayah) { _, a in
-                    follow(a, proxy)
+                    follow(a, proxy, viewport: geo.size.height)
                 }
             }
             .task(id: LayoutKey(width: width, font: store.settings.quranFontSize)) {
@@ -135,7 +136,17 @@ struct SurahReaderView: View {
         engine.play(surah: surah, from: max(a, 1))
     }
 
-    private func scrollToStart(_ proxy: ScrollViewProxy) {
+    private static let headerID = -1000
+    /// Height of the surah header with its padding, enough to tell which lines show before any scrolling.
+    private static let headerHeight: CGFloat = 92
+
+    /// True when the ayah's first line is in view while the surah is scrolled to its top.
+    private func shownAtTop(_ a: Int, _ layout: MushafLayout, viewport: CGFloat) -> Bool {
+        guard let row = layout.row(forAyah: a) else { return false }
+        return Self.headerHeight + CGFloat(row + 1) * layout.lineHeight <= viewport - 8
+    }
+
+    private func scrollToStart(_ proxy: ScrollViewProxy, viewport: CGFloat) {
         guard let layout else { return }
         var target: Int?
         if isCurrent {
@@ -145,14 +156,21 @@ struct SurahReaderView: View {
         } else if let last = store.last, last.surah == surah {
             target = last.ayah
         }
-        guard let a = target, a > 1, let id = layout.lineID(forAyah: a) else { return }
+        // An ayah that already shows under the surah header needs no scrolling; the header stays in view.
+        guard let a = target, !shownAtTop(a, layout, viewport: viewport), let id = layout.lineID(forAyah: a) else { return }
         proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.15))
     }
 
-    private func follow(_ a: Int, _ proxy: ScrollViewProxy) {
-        guard isCurrent, let layout, let id = layout.lineID(forAyah: a) else { return }
-        withAnimation(.easeInOut(duration: 0.4)) {
-            proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.2))
+    private func follow(_ a: Int, _ proxy: ScrollViewProxy, viewport: CGFloat) {
+        guard isCurrent, let layout else { return }
+        if shownAtTop(a, layout, viewport: viewport) {
+            withAnimation(.easeInOut(duration: 0.4)) {
+                proxy.scrollTo(Self.headerID, anchor: .top)
+            }
+        } else if let id = layout.lineID(forAyah: a) {
+            withAnimation(.easeInOut(duration: 0.4)) {
+                proxy.scrollTo(id, anchor: UnitPoint(x: 0.5, y: 0.2))
+            }
         }
     }
 }
