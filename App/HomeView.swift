@@ -77,7 +77,9 @@ struct HomeView: View {
                 .font(AppFont.ui(14))
                 .foregroundStyle(p.ink2)
                 ProgressLine(fraction: Double(done) / Double(max(info.ayahCount, 1)))
-                PrimaryButton(title: "تابع من الآية \(Arabic.n(last.ayah))", systemImage: "play.fill") {
+                // The teacher recording always plays the whole surah.
+                PrimaryButton(title: store.settings.reciter.isAyahByAyah ? "تابع من الآية \(Arabic.n(last.ayah))" : "استمع إلى السورة كاملة",
+                              systemImage: "play.fill") {
                     router.open(surah: last.surah, ayah: last.ayah)
                     engine.start(surah: last.surah, at: last.ayah)
                 }
