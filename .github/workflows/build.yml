@@ -1,0 +1,136 @@
+# Builds جوِّد on GitHub's macOS machines (no Mac needed).
+#  • build: Jawwid.ipa, published on the "ipa" branch; the build log (errors and warnings) on the "logs" branch
+#  • shots: when the commit message contains [shots] (or on a manual run), screenshots from the iPhone simulator
+#    on the "shots" branch
+name: Build Jawwid
+on:
+  push:
+    branches: [main]
+    paths-ignore:
+      - README.md
+      - CREDITS.md
+      - tools/**
+      - .github/workflows/data.yml
+  workflow_dispatch:
+permissions:
+  contents: write
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate the Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Build (unsigned)
+        run: |
+          set -o pipefail
+          xcodebuild -version | tee build.log
+          xcodebuild -project Jawwid.xcodeproj -scheme Jawwid -configuration Release \
+            -sdk iphoneos -destination 'generic/platform=iOS' -derivedDataPath build \
+            CODE_SIGNING_ALLOWED=NO CODE_SIGNING_REQUIRED=NO build 2>&1 | tee -a build.log | tail -n 40
+      - name: Package Jawwid.ipa
+        run: |
+          APP=build/Build/Products/Release-iphoneos/Jawwid.app
+          codesign --force --sign - "$APP"
+          mkdir -p Payload && cp -R "$APP" Payload/ && zip -qry Jawwid.ipa Payload
+      - name: Publish Jawwid.ipa on the "ipa" branch
+        run: |
+          mkdir _out && cp Jawwid.ipa _out/ && cd _out
+          git init -q -b ipa && git add Jawwid.ipa
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "Jawwid.ipa from ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" ipa
+      - name: Publish the build log on the "logs" branch
+        if: always()
+        run: |
+          mkdir -p _log
+          {
+            echo "commit ${GITHUB_SHA::7} — ${{ job.status }}"
+            head -n 2 build.log
+            echo "----- errors"
+            grep -E "error:|: error" build.log | sort -u | head -150
+            echo "----- warnings"
+            grep -E "warning:" build.log | grep -v "appintentsmetadataprocessor" | sort -u | head -150
+            echo "----- tail"
+            tail -n 80 build.log
+          } > _log/build.log 2>/dev/null || true
+          cd _log && git init -q -b logs && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "build log ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" logs
+
+  shots:
+    if: contains(github.event.head_commit.message, '[shots]') || github.event_name == 'workflow_dispatch'
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: maxim-lobanov/setup-xcode@v1
+        with:
+          xcode-version: latest-stable
+      - name: Generate the Xcode project
+        run: brew install xcodegen && xcodegen generate
+      - name: Pick and boot an iPhone simulator
+        run: |
+          UDID=$(python3 .github/pick_sim.py pro)
+          echo "UDID=$UDID" >> "$GITHUB_ENV"
+          xcrun simctl boot "$UDID" || true
+      - name: Build for the simulator
+        run: |
+          set -o pipefail
+          xcodebuild -project Jawwid.xcodeproj -scheme Jawwid -configuration Debug -destination "id=$UDID" \
+            -derivedDataPath simbuild CODE_SIGNING_ALLOWED=NO build 2>&1 | tee sim.log | tail -n 30
+      - name: Take screenshots
+        run: |
+          APP=simbuild/Build/Products/Debug-iphonesimulator/Jawwid.app
+          ID=com.jawwid.app
+          mkdir -p shots
+          prep() {
+            xcrun simctl boot "$1" >/dev/null 2>&1 || true
+            xcrun simctl bootstatus "$1" -b >/dev/null
+            xcrun simctl status_bar "$1" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
+            xcrun simctl install "$1" "$APP"
+            # warm-up launch: a freshly booted simulator draws its first frames slowly
+            xcrun simctl launch "$1" $ID -jawwidDemo home >/dev/null 2>&1 || true
+            sleep 15
+            xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
+          }
+          shoot() { # udid screen file [theme]
+            xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
+            xcrun simctl launch "$1" $ID -jawwidDemo "$2" -jawwidTheme "${4:-light}" >/dev/null
+            sleep 6
+            xcrun simctl io "$1" screenshot "shots/$3.png" >/dev/null
+          }
+          prep "$UDID"
+          for s in home home-new mini index juz reader reader-gap reader-compact reader-settings reader-font \
+                   reader-fatiha reader-baqarah reader-basmala reader-idle progress settings credits tajweed; do
+            shoot "$UDID" "$s" "$s"
+          done
+          for s in home reader reader-settings index; do shoot "$UDID" "$s" "dark-$s" dark; done
+          xcrun simctl ui "$UDID" content_size accessibility-extra-extra-large
+          shoot "$UDID" home xl-home
+          shoot "$UDID" reader xl-reader
+          xcrun simctl ui "$UDID" content_size large
+          SMALL=$(python3 .github/pick_sim.py small)
+          if [ -n "$SMALL" ]; then
+            prep "$SMALL"
+            for s in home reader index reader-settings; do shoot "$SMALL" "$s" "small-$s"; done
+            xcrun simctl shutdown "$SMALL" || true
+          fi
+          MAX=$(python3 .github/pick_sim.py max)
+          if [ -n "$MAX" ]; then
+            prep "$MAX"
+            for s in reader home; do shoot "$MAX" "$s" "max-$s"; done
+          fi
+          xcrun simctl list devices booted > shots/devices.txt
+      - name: Publish screenshots on the "shots" branch
+        if: always()
+        run: |
+          mkdir -p shots
+          { grep -E "error:|: error" sim.log | sort -u | head -100; echo "-----"; tail -n 60 sim.log; } > shots/sim.log 2>/dev/null || true
+          cd shots && git init -q -b shots && git add -A
+          git -c user.name="github-actions" -c user.email="actions@github.com" commit -qm "screenshots ${GITHUB_SHA::7}"
+          git push -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" shots
