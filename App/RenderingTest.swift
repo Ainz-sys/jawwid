@@ -5,7 +5,7 @@ import SwiftUI
 /// Every word comes from the bundled Tanzil text.
 struct RenderingTestView: View {
     private let p = Palette.light
-    private let size: CGFloat = 34
+    private let size: CGFloat = 26
 
     var body: some View {
         let q = Quran.shared
@@ -18,7 +18,7 @@ struct RenderingTestView: View {
         let inna = q.words(97, 1)[0].text
         let sajdah = q.words(7, 206).last ?? DisplayWord(text: "", marks: nil)
         ScrollView {
-            VStack(alignment: .trailing, spacing: 10) {
+            VStack(alignment: .leading, spacing: 4) {
                 row("A — مسافة ثم العلامة (كما في الملف)", Text(rayb + " " + mark + " " + fihi))
                 row("B — مسافة غير فاصلة ثم العلامة", Text(rayb + "\u{00A0}" + mark + " " + fihi))
                 row("C — العلامة ملتصقة بآخر الكلمة", Text(rayb + mark + " " + fihi))
@@ -45,20 +45,20 @@ struct RenderingTestView: View {
                 })
                 row("I — علامة السجدة", Text(sajdah.shown))
             }
-            .padding(20)
+            .padding(.horizontal, 12)
+            .padding(.top, 8)
         }
         .background(p.paper)
         .environment(\.layoutDirection, .rightToLeft)
     }
 
     private func row<V: View>(_ label: String, _ view: V) -> some View {
-        VStack(alignment: .trailing, spacing: 2) {
-            Text(label).font(AppFont.ui(13)).foregroundStyle(p.ink2)
+        HStack(spacing: 12) {
+            Text(label).font(AppFont.ui(11)).foregroundStyle(p.ink2).frame(width: 150, alignment: .leading)
             view
                 .font(AppFont.quran(size))
                 .foregroundStyle(p.ink)
-                .frame(maxWidth: .infinity, alignment: .trailing)
-                .padding(.vertical, 4)
+                .frame(maxWidth: .infinity, minHeight: 64, alignment: .leading)
                 .background(Color.white.opacity(0.6))
         }
     }

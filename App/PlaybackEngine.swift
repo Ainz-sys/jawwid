@@ -259,6 +259,11 @@ final class PlaybackEngine: ObservableObject {
             return
         }
         player.defaultRate = Float(settings.speed)
+        // Waiting for "next" while the learner switches to automatic: go on by itself.
+        if phase == .waiting {
+            if settings.autoAdvance { next() }
+            return
+        }
         guard reciter.isAyahByAyah, let current = currentStep, let item = player.currentItem else { return }
         // Drop everything queued after the current item and plan the rest of this ayah again.
         for queued in player.items().dropFirst() {

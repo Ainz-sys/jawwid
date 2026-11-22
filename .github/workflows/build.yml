@@ -66,6 +66,7 @@ jobs:
   shots:
     if: contains(github.event.head_commit.message, '[shots]') || github.event_name == 'workflow_dispatch'
     runs-on: macos-15
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
       - uses: maxim-lobanov/setup-xcode@v1
@@ -88,21 +89,23 @@ jobs:
           APP=simbuild/Build/Products/Debug-iphonesimulator/Jawwid.app
           ID=com.jawwid.app
           mkdir -p shots
+          # every simulator command gets a time limit, so one stuck call cannot hang the job
+          t() { perl -e 'alarm shift; exec @ARGV' "$@"; }
           prep() {
-            xcrun simctl boot "$1" >/dev/null 2>&1 || true
-            xcrun simctl bootstatus "$1" -b >/dev/null
-            xcrun simctl status_bar "$1" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
-            xcrun simctl install "$1" "$APP"
+            t 120 xcrun simctl boot "$1" >/dev/null 2>&1 || true
+            t 300 xcrun simctl bootstatus "$1" -b >/dev/null 2>&1 || return 1
+            t 30 xcrun simctl status_bar "$1" override --time "9:41" --batteryState charged --batteryLevel 100 --wifiBars 3 --cellularBars 4 || true
+            t 120 xcrun simctl install "$1" "$APP" || return 1
             # warm-up launch: a freshly booted simulator draws its first frames slowly
-            xcrun simctl launch "$1" $ID -jawwidDemo home >/dev/null 2>&1 || true
+            t 30 xcrun simctl launch "$1" $ID -jawwidDemo home >/dev/null 2>&1 || true
             sleep 15
-            xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
+            t 30 xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
           }
           shoot() { # udid screen file [theme]
-            xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
-            xcrun simctl launch "$1" $ID -jawwidDemo "$2" -jawwidTheme "${4:-light}" >/dev/null
+            t 30 xcrun simctl terminate "$1" $ID >/dev/null 2>&1 || true
+            t 30 xcrun simctl launch "$1" $ID -jawwidDemo "$2" -jawwidTheme "${4:-light}" >/dev/null 2>&1 || true
             sleep 6
-            xcrun simctl io "$1" screenshot "shots/$3.png" >/dev/null
+            t 30 xcrun simctl io "$1" screenshot "shots/$3.png" >/dev/null 2>&1 || echo "no screenshot for $3"
           }
           prep "$UDID"
           for s in home home-new mini index juz reader reader-gap reader-compact reader-settings reader-font \
@@ -110,22 +113,15 @@ jobs:
             shoot "$UDID" "$s" "$s"
           done
           for s in home reader reader-settings index; do shoot "$UDID" "$s" "dark-$s" dark; done
-          xcrun simctl ui "$UDID" content_size accessibility-extra-extra-large
+          t 30 xcrun simctl ui "$UDID" content_size accessibility-extra-extra-large || true
           shoot "$UDID" home xl-home
           shoot "$UDID" reader xl-reader
-          xcrun simctl ui "$UDID" content_size large
+          t 30 xcrun simctl ui "$UDID" content_size large || true
           SMALL=$(python3 .github/pick_sim.py small)
-          if [ -n "$SMALL" ]; then
-            prep "$SMALL"
+          if [ -n "$SMALL" ] && prep "$SMALL"; then
             for s in home reader index reader-settings; do shoot "$SMALL" "$s" "small-$s"; done
-            xcrun simctl shutdown "$SMALL" || true
           fi
-          MAX=$(python3 .github/pick_sim.py max)
-          if [ -n "$MAX" ]; then
-            prep "$MAX"
-            for s in reader home; do shoot "$MAX" "$s" "max-$s"; done
-          fi
-          xcrun simctl list devices booted > shots/devices.txt
+          t 30 xcrun simctl list devices booted > shots/devices.txt || true
       - name: Publish screenshots on the "shots" branch
         if: always()
         run: |

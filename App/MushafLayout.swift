@@ -8,7 +8,7 @@ struct MushafItem: Equatable, Sendable {
         case word
         /// Ayah-end sign with its number.
         case marker
-        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel so it has a base, then raised into the gap.
+        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel in the gap after its word (the font sets its height).
         case pause
         /// Sajdah sign ۩ or rub el hizb ۞.
         case symbol
@@ -250,7 +250,7 @@ struct MushafLineView: View {
         content(item)
             .font(AppFont.quran(fontSize))
             .fixedSize()
-            .offset(y: textOffset + (item.kind == .pause ? -0.32 * fontSize : 0))
+            .offset(y: textOffset)
             .frame(width: item.width + 4, height: height)
             .background {
                 if lit {
