@@ -1,3 +1,4 @@
+import SwiftUI
 import XCTest
 @testable import Jawwid
 
@@ -87,6 +88,56 @@ final class JawwidTests: XCTestCase {
             XCTAssertGreaterThan(box?.width ?? 0, 1)
             XCTAssertNotNil(PauseMarkShapes.shape(mark, fontSize: 30), "no outline for U+\(String(v, radix: 16))")
         }
+    }
+
+    /// Renders the first line of al-Baqarah (with ۛ after رَيْبَ and فِيهِ) and finds where each pause mark's ink lands.
+    func testPauseMarksAreDrawnAboveTheirOwnLine() throws {
+        let fontSize: CGFloat = 30
+        let width: CGFloat = 374
+        let layout = MushafLayout.build(surah: 2, width: width, fontSize: fontSize)
+        guard let line = layout.lines.first(where: { $0.items.contains { $0.kind == .pause } }) else {
+            return XCTFail("no line with a pause mark in al-Baqarah")
+        }
+        print("LINE ITEMS: " + line.items.map { "\($0.kind) \($0.text) x=\(Int($0.x)) w=\(Int($0.width))" }.joined(separator: " | "))
+        XCTAssertNotNil(PauseMarkShapes.shape("\u{06DB}", fontSize: fontSize), "no outline for ۛ")
+
+        // Room above and below, so ink outside the line's frame shows up too.
+        let pad: CGFloat = 40
+        let view = MushafLineView(line: line, width: width, height: layout.lineHeight, fontSize: fontSize,
+                                  activeAyah: nil, activeWords: nil, palette: .light, onTap: { _ in })
+            .padding(.vertical, pad)
+        let renderer = ImageRenderer(content: view)
+        renderer.scale = 1
+        guard let image = renderer.cgImage else { return XCTFail("nothing rendered") }
+        let w = image.width, h = image.height
+        var pixels = [UInt8](repeating: 0, count: w * h * 4)
+        let drawn: Bool = pixels.withUnsafeMutableBytes { buffer in
+            guard let ctx = CGContext(data: buffer.baseAddress, width: w, height: h, bitsPerComponent: 8, bytesPerRow: w * 4,
+                                      space: CGColorSpaceCreateDeviceRGB(),
+                                      bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue) else { return false }
+            ctx.draw(image, in: CGRect(x: 0, y: 0, width: w, height: h))
+            return true
+        }
+        XCTAssertTrue(drawn)
+        func ink(_ x: Int, _ y: Int) -> Bool { pixels[(y * w + x) * 4 + 3] > 100 } // rows run top to bottom
+
+        let font = AppFont.uiQuranFont(fontSize)
+        let baseline = pad + layout.lineHeight / 2 - 0.28 * fontSize - font.lineHeight / 2 + font.ascender
+        var report: [String] = []
+        for item in line.items where item.kind == .pause {
+            let x0 = max(0, Int(item.x) + 1), x1 = min(w - 1, max(Int(item.x) + 1, Int(item.x + item.width) - 1))
+            let rows = (0..<h).filter { y in (x0...x1).contains { ink($0, y) } }
+            guard let top = rows.first, let bottom = rows.last else {
+                report.append("\(item.text) at x \(Int(item.x)): no ink")
+                continue
+            }
+            report.append("\(item.text) at x \(Int(item.x)): ink rows \(top)...\(bottom), baseline \(Int(baseline))")
+            // The mark's centre should be about one em above the words' baseline, inside the line.
+            let centre = CGFloat(top + bottom) / 2
+            XCTAssertEqual(centre, baseline - fontSize, accuracy: 0.2 * fontSize, report.last ?? "")
+            XCTAssertGreaterThanOrEqual(CGFloat(top), pad, "the mark pokes above its line: \(report.last ?? "")")
+        }
+        print("PAUSE MARKS: " + report.joined(separator: " | "))
     }
 
     // MARK: - Words and numbers
