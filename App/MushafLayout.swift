@@ -118,7 +118,7 @@ struct MushafLayout: Sendable {
             for (i, w) in words.enumerated() {
                 var unit = Unit()
                 unit.parts.append(Part(kind: .word, ayah: a, word: i, text: w.text, width: measure(w.text, font: font)))
-                for mark in (w.marks ?? "").split(separator: " ").map(String.init) {
+                for mark in Quran.spaceSeparated(w.marks ?? "") {
                     if isPauseMark(mark) {
                         let markWidth = glyphBox(mark, fontSize: fontSize).map { ceil($0.width) } ?? (fontSize * 0.25).rounded()
                         unit.parts.append(Part(kind: .pause, ayah: a, word: i, text: mark, width: markWidth))
@@ -230,8 +230,9 @@ struct MushafLineView: View {
     }
 
     /// Height of a pause mark's centre above the baseline. Laid out as text, Amiri Quran puts these marks
-    /// 1.3–1.5 em up, clear of any stack of harakat, which leaves them nearer the line above than their own.
-    /// Drawn from their outlines instead, they sit in the gap at the height of the harakat, as in print.
+    /// 1.3–1.8 em up, clear of any stack of harakat, which leaves them nearer the line above than their own.
+    /// Drawn from their outlines instead, they sit in the gap at the height of the harakat, as in print;
+    /// centred there, even the tallest (ۗ) stays inside its line.
     private var markLift: CGFloat { 1.0 * fontSize }
 
     var body: some View {
@@ -255,7 +256,7 @@ struct MushafLineView: View {
         let parts = line.items.filter { $0.ayah == a }
         guard let minX = parts.map({ $0.x }).min(), let maxX = parts.map({ $0.x + $0.width }).max() else { return nil }
         // Tall enough to hold the pause marks above the words and the kasras below them.
-        let h = min(fontSize * 1.8, height - 4)
+        let h = min(fontSize * 1.85, height - 4)
         return CGRect(x: minX - 6, y: (height - h) / 2, width: maxX - minX + 12, height: h)
     }
 

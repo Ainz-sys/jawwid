@@ -28,6 +28,27 @@ final class JawwidTests: XCTestCase {
         }
     }
 
+    /// A pause mark is its own token after a space, though a space and a combining mark make one grapheme.
+    func testPauseMarksAreSplitFromTheirWords() {
+        let words = Quran.shared.words(2, 2)
+        XCTAssertEqual(words.count, 7)
+        XCTAssertEqual(words[3].text, "\u{0631}\u{064E}\u{064A}\u{0652}\u{0628}\u{064E}") // رَيْبَ
+        XCTAssertEqual(words[3].marks, "\u{06DB}")
+        XCTAssertEqual(words[4].text, "\u{0641}\u{0650}\u{064A}\u{0647}\u{0650}") // فِيهِ
+        XCTAssertEqual(words[4].marks, "\u{06DB}")
+        var marked = 0
+        for s in Quran.shared.surahs {
+            for a in 1...s.ayahCount {
+                for w in Quran.shared.words(s.number, a) {
+                    XCTAssertFalse(w.text.unicodeScalars.contains { (0x06D6...0x06DC).contains($0.value) },
+                                   "\(s.number):\(a) “\(w.text)” still carries a pause mark")
+                    marked += Quran.spaceSeparated(w.marks ?? "").count
+                }
+            }
+        }
+        XCTAssertEqual(marked, 4379, "pause and sajdah marks in the text")
+    }
+
     /// Every timed segment must point at words that exist in the text, or the highlight lands on the wrong word.
     func testWordTimingsMatchTheText() async {
         let q = Quran.shared

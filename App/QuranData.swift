@@ -130,16 +130,21 @@ final class Quran: @unchecked Sendable {
         !token.isEmpty && token.unicodeScalars.allSatisfy { markScalars.contains($0.value) }
     }
 
+    /// Splits at each space character. Splitting the String itself would go by grapheme, and a space followed by
+    /// a combining pause mark (رَيْبَ ۛ) is one grapheme, so the mark would stay glued to the word before it.
+    static func spaceSeparated(_ text: String) -> [String] {
+        text.unicodeScalars.split(separator: " ").map { String(String.UnicodeScalarView($0)) }
+    }
+
     /// Splits an ayah by spaces, like the word timings do; marks join the word before them.
     static func words(in text: String) -> [DisplayWord] {
         var out: [DisplayWord] = []
-        for token in text.split(separator: " ", omittingEmptySubsequences: true) {
+        for token in spaceSeparated(text) {
             if isMarkToken(token), let last = out.last {
-                let mark = String(token)
-                let marks: String = last.marks.map { $0 + " " + mark } ?? mark
+                let marks: String = last.marks.map { $0 + " " + token } ?? token
                 out[out.count - 1] = DisplayWord(text: last.text, marks: marks)
             } else {
-                out.append(DisplayWord(text: String(token), marks: nil))
+                out.append(DisplayWord(text: token, marks: nil))
             }
         }
         return out
