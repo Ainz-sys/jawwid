@@ -106,7 +106,7 @@ jobs:
           }
           prep "$UDID"
           for s in home home-new mini index juz reader reader-gap reader-compact reader-settings reader-font \
-                   reader-fatiha reader-baqarah reader-basmala reader-idle progress settings credits tajweed; do
+                   reader-fatiha reader-baqarah reader-basmala reader-idle progress settings credits tajweed marks-test; do
             shoot "$UDID" "$s" "$s"
           done
           for s in home reader reader-settings index; do shoot "$UDID" "$s" "dark-$s" dark; done

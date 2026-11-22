@@ -10,9 +10,9 @@ struct HomeView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 18) {
                 header
-                HStack(spacing: 10) {
-                    InfoChip(systemImage: "calendar", text: "أيام متتالية: \(Arabic.n(store.streak))")
-                    InfoChip(systemImage: "checkmark.seal", text: "آيات اليوم: \(Arabic.n(store.todayCount))")
+                ViewThatFits(in: .horizontal) {
+                    HStack(spacing: 10) { chips }
+                    VStack(alignment: .leading, spacing: 8) { chips }
                 }
                 if let last = store.last {
                     continueCard(last)
@@ -33,6 +33,12 @@ struct HomeView: View {
         .screenBackground(p)
         .toolbar(.hidden, for: .navigationBar)
         .safeAreaInset(edge: .bottom) { MiniPlayerBar() }
+    }
+
+    @ViewBuilder
+    private var chips: some View {
+        InfoChip(systemImage: "calendar", text: "أيام متتالية: \(Arabic.n(store.streak))")
+        InfoChip(systemImage: "checkmark.seal", text: "آيات اليوم: \(Arabic.n(store.todayCount))")
     }
 
     private var header: some View {

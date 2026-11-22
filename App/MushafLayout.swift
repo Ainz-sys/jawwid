@@ -4,7 +4,15 @@ import UIKit
 
 /// One drawn piece of a mushaf line: a word (with any marks after it) or an ayah-end sign.
 struct MushafItem: Equatable, Sendable {
-    enum Kind: Equatable, Sendable { case word, marker }
+    enum Kind: Equatable, Sendable {
+        case word
+        /// Ayah-end sign with its number.
+        case marker
+        /// Pause mark (ۖ ۗ ۚ ۛ …): drawn on an invisible tatweel so it has a base, then raised into the gap.
+        case pause
+        /// Sajdah sign ۩ or rub el hizb ۞.
+        case symbol
+    }
     let kind: Kind
     /// 0 = the basmala line.
     let ayah: Int
@@ -45,6 +53,15 @@ struct MushafLayout: Sendable {
 
     static func ayahSign(_ a: Int) -> String { "\u{06DD}" + Arabic.n(a) }
 
+    /// Pause marks are combining marks; the rest (۩ ۞) are standalone symbols.
+    static func isPauseMark(_ s: String) -> Bool {
+        guard let v = s.unicodeScalars.first?.value else { return false }
+        return v >= 0x06D6 && v <= 0x06DC
+    }
+
+    /// Tatweel that carries a pause mark; drawn transparent.
+    static let markBase = "\u{0640}"
+
     private struct Part {
         let kind: MushafItem.Kind
         let ayah: Int
@@ -78,8 +95,14 @@ struct MushafLayout: Sendable {
             let words = quran.words(s, a)
             for (i, w) in words.enumerated() {
                 var unit = Unit()
-                let shown = w.shown
-                unit.parts.append(Part(kind: .word, ayah: a, word: i, text: shown, width: measure(shown, font: font)))
+                unit.parts.append(Part(kind: .word, ayah: a, word: i, text: w.text, width: measure(w.text, font: font)))
+                for mark in (w.marks ?? "").split(separator: " ").map(String.init) {
+                    if isPauseMark(mark) {
+                        unit.parts.append(Part(kind: .pause, ayah: a, word: i, text: mark, width: measure(markBase + mark, font: font)))
+                    } else {
+                        unit.parts.append(Part(kind: .symbol, ayah: a, word: i, text: mark, width: measure(mark, font: font)))
+                    }
+                }
                 if i == words.count - 1 {
                     let sign = ayahSign(a)
                     unit.parts.append(Part(kind: .marker, ayah: a, word: -1, text: sign, width: measure(sign, font: font)))
@@ -206,14 +229,28 @@ struct MushafLineView: View {
         return r.contains(item.word)
     }
 
+    private func content(_ item: MushafItem) -> Text {
+        switch item.kind {
+        case .word, .symbol:
+            return Text(item.text).foregroundStyle(palette.ink)
+        case .marker:
+            return Text(item.text).foregroundStyle(palette.gold)
+        case .pause:
+            var base = AttributedString(MushafLayout.markBase)
+            base.foregroundColor = .clear
+            var mark = AttributedString(item.text)
+            mark.foregroundColor = palette.ink
+            return Text(base + mark)
+        }
+    }
+
     @ViewBuilder
     private func itemView(_ item: MushafItem) -> some View {
         let lit = isLit(item)
-        Text(item.text)
+        content(item)
             .font(AppFont.quran(fontSize))
-            .foregroundStyle(item.kind == .word ? palette.ink : palette.gold)
             .fixedSize()
-            .offset(y: textOffset)
+            .offset(y: textOffset + (item.kind == .pause ? -0.32 * fontSize : 0))
             .frame(width: item.width + 4, height: height)
             .background {
                 if lit {

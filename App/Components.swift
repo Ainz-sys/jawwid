@@ -23,7 +23,7 @@ struct PillPicker<T: Hashable>: View {
                         .background {
                             if selected {
                                 RoundedRectangle(cornerRadius: 12, style: .continuous)
-                                    .fill(p.surface)
+                                    .fill(p.id == "dark" ? p.line : p.surface)
                                     .shadow(color: .black.opacity(0.08), radius: 3, y: 1)
                             }
                         }
@@ -133,6 +133,8 @@ struct InfoChip: View {
         HStack(spacing: 8) {
             Image(systemName: systemImage).font(.system(size: 15, weight: .medium)).foregroundStyle(p.accent)
             Text(text).font(AppFont.ui(15, .medium)).foregroundStyle(p.ink)
+                .lineLimit(1)
+                .minimumScaleFactor(0.7)
         }
         .padding(.horizontal, 16)
         .frame(minHeight: 40)
@@ -172,9 +174,15 @@ struct ProgressRing: View {
                 .trim(from: 0, to: max(0, min(1, fraction)))
                 .stroke(p.accent, style: StrokeStyle(lineWidth: 3.5, lineCap: .round))
                 .rotationEffect(.degrees(-90))
-            Text(Arabic.n(Int((fraction * 100).rounded())))
-                .font(AppFont.ui(10, .semibold))
-                .foregroundStyle(p.ink2)
+            if fraction >= 1 {
+                Image(systemName: "checkmark")
+                    .font(.system(size: 12, weight: .bold))
+                    .foregroundStyle(p.accent)
+            } else {
+                Text(Arabic.n(Int((fraction * 100).rounded())))
+                    .font(AppFont.ui(10, .semibold))
+                    .foregroundStyle(p.ink2)
+            }
         }
         .frame(width: size, height: size)
         .accessibilityElement()

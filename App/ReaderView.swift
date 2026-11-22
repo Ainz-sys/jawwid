@@ -240,6 +240,7 @@ struct ReaderPlayerPanel: View {
         .padding(.top, 16)
         .padding(.bottom, 10)
         .frame(maxWidth: .infinity)
+        .dynamicTypeSize(...DynamicTypeSize.xxLarge)
         .background {
             UnevenRoundedRectangle(topLeadingRadius: 28, topTrailingRadius: 28, style: .continuous)
                 .fill(p.surface)
@@ -283,8 +284,14 @@ struct ReaderPlayerPanel: View {
         return p.ink
     }
 
+    /// Small iPhones keep the panel short, leaving room for the mushaf.
+    private var isShortScreen: Bool {
+        let scene = UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first
+        return (scene?.screen.bounds.height ?? 800) < 700
+    }
+
     private var hint: String? {
-        guard engine.reciter.isAyahByAyah, engine.phase == .reciting || engine.phase == .gap else { return nil }
+        guard !isShortScreen, engine.reciter.isAyahByAyah, engine.phase == .reciting || engine.phase == .gap else { return nil }
         let s = store.settings
         let first: String
         switch s.pauseMode {

@@ -66,6 +66,22 @@ struct RootView: View {
     }
 
     var body: some View {
+        Group {
+            if Demo.screen == "marks-test" {
+                RenderingTestView()
+            } else {
+                tabs
+            }
+        }
+        .tint(palette.accent)
+        .environment(\.palette, palette)
+        .environment(\.layoutDirection, .rightToLeft)
+        .environment(\.locale, Locale(identifier: "ar"))
+        .font(AppFont.ui(17))
+        .preferredColorScheme(store.settings.theme.colorScheme)
+    }
+
+    private var tabs: some View {
         TabView(selection: $router.tab) {
             NavigationStack(path: $router.homePath) {
                 HomeView()
@@ -106,11 +122,5 @@ struct RootView: View {
             .tabItem { Label("تقدّمي", systemImage: "chart.bar") }
             .tag(AppTab.progress)
         }
-        .tint(palette.accent)
-        .environment(\.palette, palette)
-        .environment(\.layoutDirection, .rightToLeft)
-        .environment(\.locale, Locale(identifier: "ar"))
-        .font(AppFont.ui(17))
-        .preferredColorScheme(store.settings.theme.colorScheme)
     }
 }
