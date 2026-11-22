@@ -1,0 +1,94 @@
+commit eb1acfa — success
+Test Case '-[JawwidTests.JawwidTests testArabicPlurals]' started.
+Test Case '-[JawwidTests.JawwidTests testArabicPlurals]' passed (0.006 seconds).
+Test Case '-[JawwidTests.JawwidTests testAyahByAyahWithRepeatsAndPauses]' started.
+PLAYBACK LOG: loading 1 1/2 | reciting 0 1/2 | gap 0 1/2 | reciting 0 2/2 | gap 0 2/2 | reciting 1 1/2 | gap 1 1/2 | reciting 1 2/2 | gap 1 2/2 | reciting 2 1/2 | gap 2 1/2 | reciting 2 2/2 | gap 2 2/2 | finished 2 2/2
+Test Case '-[JawwidTests.JawwidTests testAyahByAyahWithRepeatsAndPauses]' passed (50.508 seconds).
+Test Case '-[JawwidTests.JawwidTests testBundledTextAndStructure]' started.
+Test Case '-[JawwidTests.JawwidTests testBundledTextAndStructure]' passed (0.142 seconds).
+Test Case '-[JawwidTests.JawwidTests testDayKeysAreGregorian]' started.
+Test Case '-[JawwidTests.JawwidTests testDayKeysAreGregorian]' passed (0.001 seconds).
+Test Case '-[JawwidTests.JawwidTests testDownloadPlaysFromTheDeviceThenDelete]' started.
+Test Case '-[JawwidTests.JawwidTests testDownloadPlaysFromTheDeviceThenDelete]' passed (1.919 seconds).
+Test Case '-[JawwidTests.JawwidTests testEveryAyahIsLaidOutWithinTheLine]' started.
+Test Case '-[JawwidTests.JawwidTests testEveryAyahIsLaidOutWithinTheLine]' passed (10.716 seconds).
+Test Case '-[JawwidTests.JawwidTests testManualAdvanceWaitsForNext]' started.
+Test Case '-[JawwidTests.JawwidTests testManualAdvanceWaitsForNext]' passed (3.164 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarkOutlines]' started.
+Test Case '-[JawwidTests.JawwidTests testPauseMarkOutlines]' passed (0.029 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreDrawnAboveTheirOwnLine]' started.
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreDrawnAboveTheirOwnLine]' passed (1.122 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreSplitFromTheirWords]' started.
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreSplitFromTheirWords]' passed (0.236 seconds).
+Test Case '-[JawwidTests.JawwidTests testTeacherRecordingPlaysTheWholeSurah]' started.
+Test Case '-[JawwidTests.JawwidTests testTeacherRecordingPlaysTheWholeSurah]' passed (2.694 seconds).
+Test Case '-[JawwidTests.JawwidTests testWholePercent]' started.
+Test Case '-[JawwidTests.JawwidTests testWholePercent]' passed (0.001 seconds).
+Test Case '-[JawwidTests.JawwidTests testWordTimingsMatchTheText]' started.
+Test Case '-[JawwidTests.JawwidTests testWordTimingsMatchTheText]' passed (0.558 seconds).
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.107) seconds
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.108) seconds
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.110) seconds
+** TEST SUCCEEDED **
+----- warnings
+----- tail
+2026-11-22 13:52:21.681382+0000 Jawwid[7570:34269] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:23.940197+0000 Jawwid[7570:34222] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:23.951876+0000 Jawwid[7570:34222] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:24.058942+0000 Jawwid[7570:34220] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:24.065328+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C1.1.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+Test Case '-[JawwidTests.JawwidTests testManualAdvanceWaitsForNext]' passed (3.164 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarkOutlines]' started.
+2026-11-22 13:52:24.193847+0000 Jawwid[7570:28211] [connection] nw_socket_set_connection_idle [C1.1.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:24.196028+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C2.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+Test Case '-[JawwidTests.JawwidTests testPauseMarkOutlines]' passed (0.029 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreDrawnAboveTheirOwnLine]' started.
+2026-11-22 13:52:24.356002+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C2.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+LINE ITEMS: word الٓمٓ x=354 w=20 | marker ۝١ x=310 w=39 | word ذَٰلِكَ x=250 w=44 | word ٱلْكِتَٰبُ x=166 w=69 | word لَا x=131 w=20 | word رَيْبَ x=69 w=47 | pause ۛ x=56 w=8 | word فِيهِ x=13 w=28 | pause ۛ x=0 w=8
+IOSurfaceClientSetSurfaceNotify failed e00002c7
+2026-11-22 13:52:24.482078+0000 Jawwid[7570:29721] fopen failed for data file: errno = 2 (No such file or directory)
+2026-11-22 13:52:24.482265+0000 Jawwid[7570:29721] Errors found! Invalidating cache...
+2026-11-22 13:52:25.063682+0000 Jawwid[7570:29721] fopen failed for data file: errno = 2 (No such file or directory)
+2026-11-22 13:52:25.064009+0000 Jawwid[7570:29721] Errors found! Invalidating cache...
+2026-11-22 13:52:25.170220+0000 Jawwid[7570:29721] [error] building pipeline path_exterior-jba6la7ge2ba4 took 0.688636 seconds
+PAUSE MARKS: ۛ at x 56: ink rows 49...54, baseline 81 | ۛ at x 0: ink rows 49...54, baseline 81
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreDrawnAboveTheirOwnLine]' passed (1.122 seconds).
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreSplitFromTheirWords]' started.
+Test Case '-[JawwidTests.JawwidTests testPauseMarksAreSplitFromTheirWords]' passed (0.236 seconds).
+Test Case '-[JawwidTests.JawwidTests testTeacherRecordingPlaysTheWholeSurah]' started.
+2026-11-22 13:52:25.589877+0000 Jawwid[7570:34220] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:25.821213+0000 Jawwid[7570:28211] [connection] nw_socket_set_connection_idle [C4.1.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:25.850853+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C4.1.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:25.899530+0000 Jawwid[7570:34271] [connection] nw_socket_set_connection_idle [C5.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:25.956345+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C5.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:25.958590+0000 Jawwid[7570:34219] [connection] nw_socket_set_connection_idle [C5.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:25.960853+0000 Jawwid[7570:34269] [AQ]        LoudnessManager.mm:1215  IsHardwareSupported: no plist loaded, returning false
+2026-11-22 13:52:25.960960+0000 Jawwid[7570:34269] [AQ]        LoudnessManager.mm:1215  IsHardwareSupported: no plist loaded, returning false
+2026-11-22 13:52:25.964078+0000 Jawwid[7570:34269] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:25.966520+0000 Jawwid[7570:34269] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:26.014393+0000 Jawwid[7570:34271] [connection] nw_socket_set_connection_idle [C5.1.1:3] setsockopt SO_CONNECTION_IDLE failed [42: Protocol not available]
+2026-11-22 13:52:26.023066+0000 Jawwid[7570:34269] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+Test Case '-[JawwidTests.JawwidTests testTeacherRecordingPlaysTheWholeSurah]' passed (2.694 seconds).
+Test Case '-[JawwidTests.JawwidTests testWholePercent]' started.
+Test Case '-[JawwidTests.JawwidTests testWholePercent]' passed (0.001 seconds).
+Test Case '-[JawwidTests.JawwidTests testWordTimingsMatchTheText]' started.
+2026-11-22 13:52:28.259497+0000 Jawwid[7570:34269] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:28.265531+0000 Jawwid[7570:34220] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+2026-11-22 13:52:28.286703+0000 Jawwid[7570:34220] [player] <<<< FigFilePlayer >>>> signalled err=-12864 at <>:10029
+Test Case '-[JawwidTests.JawwidTests testWordTimingsMatchTheText]' passed (0.558 seconds).
+Test Suite 'JawwidTests' passed at 2026-11-22 13:52:28.816.
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.107) seconds
+Test Suite 'JawwidTests.xctest' passed at 2026-11-22 13:52:28.817.
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.108) seconds
+Test Suite 'All tests' passed at 2026-11-22 13:52:28.817.
+	 Executed 13 tests, with 0 failures (0 unexpected) in 71.095 (71.110) seconds
+2026-11-22 13:52:31.788 xcodebuild[3964:14961] [MT] IDETestOperationsObserverDebug: 288.129 elapsed -- Testing started completed.
+2026-11-22 13:52:31.789 xcodebuild[3964:14961] [MT] IDETestOperationsObserverDebug: 0.000 sec, +0.000 sec -- start
+2026-11-22 13:52:31.789 xcodebuild[3964:14961] [MT] IDETestOperationsObserverDebug: 288.129 sec, +288.129 sec -- end
+
+Test session results, code coverage, and logs:
+	/Users/runner/work/jawwid/jawwid/testbuild/Logs/Test/Test-Jawwid-2026.11.22_13-46-59-+0000.xcresult
+
+** TEST SUCCEEDED **
+
+Testing started
